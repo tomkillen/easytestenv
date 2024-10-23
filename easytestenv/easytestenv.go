@@ -23,8 +23,8 @@ type EasyTestEnv struct {
 	Client        client.Client
 	DynamicClient *dynamic.DynamicClient
 
-	Context context.Context
-	Cancel  context.CancelFunc
+	Context  context.Context
+	Shutdown context.CancelFunc
 }
 
 type Config struct {
@@ -32,9 +32,13 @@ type Config struct {
 	ErrorIfCRDPathMissing bool
 }
 
-func New(config Config) (result *EasyTestEnv, err error) {
+func New() (result *EasyTestEnv, err error) {
+	return NewWithConfig(Config{})
+}
+
+func NewWithConfig(config Config) (result *EasyTestEnv, err error) {
 	result = &EasyTestEnv{}
-	result.Context, result.Cancel = context.WithCancel(context.TODO())
+	result.Context, result.Shutdown = context.WithCancel(context.TODO())
 
 	result.Env = &envtest.Environment{
 		CRDDirectoryPaths:     config.CRDDirectoryPaths,
@@ -59,14 +63,10 @@ func New(config Config) (result *EasyTestEnv, err error) {
 	return result, err
 }
 
-func (i *EasyTestEnv) Stop() {
-	i.Cancel()
-}
-
 // Create all resources at the given path, recursively if the path is a directory
 func (i *EasyTestEnv) ApplyResources(path string) error {
 	var prioritizedResources [3][]client.Object
-	err := gatherResourcesAtPath(path, true, prioritizedResources)
+	err := gatherResourcesAtPath(path, prioritizedResources)
 	if err != nil {
 		return err
 	}
@@ -83,19 +83,19 @@ func (i *EasyTestEnv) ApplyResources(path string) error {
 	return nil
 }
 
-func gatherResourcesAtPath(path string, recursive bool, result [3][]client.Object) error {
+func gatherResourcesAtPath(path string, result [3][]client.Object) error {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
 	}
 	if stat.IsDir() {
-		err := filepath.WalkDir(path, func(subpath string, dirEntry fs.DirEntry, err error) error {
+		err := filepath.WalkDir(path, func(path string, dirEntry fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 
-			if !dirEntry.IsDir() || recursive {
-				err := gatherResourcesAtPath(subpath, recursive, result)
+			if !dirEntry.IsDir() {
+				err := gatherResourcesAtPath(path, result)
 				if err != nil {
 					return err
 				}
