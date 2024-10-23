@@ -66,7 +66,7 @@ func NewWithConfig(config Config) (result *EasyTestEnv, err error) {
 // Create all resources at the given path, recursively if the path is a directory
 func (i *EasyTestEnv) ApplyResources(path string) error {
 	var prioritizedResources [3][]client.Object
-	err := gatherResourcesAtPath(path, prioritizedResources)
+	err := gatherResourcesAtPath(path, &prioritizedResources)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (i *EasyTestEnv) ApplyResources(path string) error {
 	return nil
 }
 
-func gatherResourcesAtPath(path string, result [3][]client.Object) error {
+func gatherResourcesAtPath(path string, result *[3][]client.Object) error {
 	stat, err := os.Stat(path)
 	if err != nil {
 		return err
