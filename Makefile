@@ -14,7 +14,7 @@ vet:
 
 .PHONY: test
 test: fmt vet setup-envtest ginkgo
-	KUBEBUILDER_ASSETS="$(PWD)/$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir bin -p path)" $(GINKGO) ./...
+	KUBEBUILDER_ASSETS="$(PWD)/$(shell $(SETUP_ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir bin -p path)" $(GINKGO) --cover ./...
 
 ### Tools
 
